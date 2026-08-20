@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Google Data Map Scraper — Find Local Businesses. Build Your Lead List.</title>
+    <meta name="description"
+        content="A Windows desktop app that turns Google Maps searches into organized, export-ready local business lead lists. No install. CSV, Excel, and JSON export." />
+    <meta name="theme-color" content="#10192E" />
+    <meta property="og:title" content="Google Data Map Scraper" />
+    <meta property="og:description"
+        content="Find local businesses. Build your lead list. Search-to-spreadsheet in minutes." />
+    <meta property="og:type" content="website" />
+    <link rel="icon"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23C1401D' d='M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z'/%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap"
+        rel="stylesheet" />
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* ── TOKENS ── */
+        :root {
+            --paper: #FFFFFF;
+            --paper-alt: #F4F5F7;
+            --ink: #10192E;
+            --ink-2: #2B3A55;
+            --slate: #5B6B85;
+            --slate-soft: #94A0B4;
+            --line: #E2E5EB;
+            --line-soft: #EDEFF3;
+            --pin: #C1401D;
+            --pin-deep: #9A3015;
+            --pin-tint: #FBEAE4;
+            --route: #1B6E63;
+            --route-tint: #E3F2EF;
+            --dark: #0B1220;
+            --dark-2: #16223A;
+            --dark-line: #263A56;
+            --dark-text: #C9D2E0;
+            --font-display: 'Space Grotesk', sans-serif;
+            --font-body: 'Inter', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --radius: 14px;
+            --radius-sm: 8px;
+            --shadow-card: 0 1px 2px rgba(16, 25, 46, .04), 0 12px 32px rgba(16, 25, 46, .07);
+            --shadow-lift: 0 8px 20px rgba(16, 25, 46, .10), 0 24px 48px rgba(16, 25, 46, .10);
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--paper);
+            color: var(--ink);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        img,
+        svg {
+            display: block;
+            max-width: 100%;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        ul {
+            list-style: none;
+        }
+
+        button {
+            font: inherit;
+            cursor: pointer;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+
+            *,
+            *::before,
+            *::after {
+                animation-duration: .001ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: .001ms !important;
+                scroll-behavior: auto !important;
+            }
+        }
+
+        /* ── SIGNATURE MOTIFS ── */
+        .contour-bg {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240' viewBox='0 0 240 240'%3E%3Cg fill='none' stroke='%2310192E' stroke-width='1'%3E%3Ccircle cx='55' cy='55' r='16'/%3E%3Ccircle cx='55' cy='55' r='31'/%3E%3Ccircle cx='55' cy='55' r='47'/%3E%3Ccircle cx='190' cy='175' r='13'/%3E%3Ccircle cx='190' cy='175' r='26'/%3E%3Ccircle cx='190' cy='175' r='40'/%3E%3C/g%3E%3C/svg%3E");
+            opacity: .045;
+        }
+
+        .contour-bg.on-dark {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240' viewBox='0 0 240 240'%3E%3Cg fill='none' stroke='%23FFFFFF' stroke-width='1'%3E%3Ccircle cx='55' cy='55' r='16'/%3E%3Ccircle cx='55' cy='55' r='31'/%3E%3Ccircle cx='55' cy='55' r='47'/%3E%3Ccircle cx='190' cy='175' r='13'/%3E%3Ccircle cx='190' cy='175' r='26'/%3E%3Ccircle cx='190' cy='175' r='40'/%3E%3C/g%3E%3C/svg%3E");
+            opacity: .06;
+        }
+
+        .pin-tab {
+            position: absolute;
+            top: -10px;
+            left: 22px;
+            width: 20px;
+            height: 20px;
+            transform: rotate(-10deg);
+            z-index: 2;
+        }
+
+        .pin-tab svg {
+            filter: drop-shadow(0 3px 4px rgba(193, 64, 29, .35));
+        }
+
+        @keyframes blinkDot {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: .35;
+            }
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(28px);
+            transition: opacity .6s ease, transform .6s ease;
+        }
+
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ── NAV ── */
+        nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(255, 255, 255, .94);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border-bottom: 1px solid var(--line);
+        }
+
+        .nav-inner {
+            max-width: 1180px;
+            margin: 0 auto;
+            padding: 0 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 62px;
+        }
+
+        .logo {
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 15px;
+            color: var(--ink);
+            letter-spacing: -.2px;
+            display: flex;
+            align-items: center;
+            gap: 9px;
+        }
+
+        .logo svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 26px;
+        }
+
+        .nav-links a:not(.btn-nav) {
+            color: var(--slate);
+            font-size: 14px;
+            font-weight: 500;
+            transition: color .15s;
+        }
+
+        .nav-links a:not(.btn-nav):hover {
+            color: var(--ink);
+        }
+
+        .btn-nav {
+            background: var(--ink);
+            color: var(--paper) !important;
+            padding: 8px 16px;
+            border-radius: var(--radius-sm);
+            font-size: 13.5px;
+            font-weight: 600;
+            transition: background .15s, transform .15s;
+        }
+
+        .btn-nav:hover {
+            background: var(--ink-2);
+            transform: translateY(-1px);
+        }
+
+        /* ── HERO ── */
+        .hero {
+            position: relative;
+            overflow: hidden;
+            padding: 76px 28px 88px;
+        }
+
+        .hero-inner {
+            max-width: 1180px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr .92fr;
+            gap: 56px;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .eyebrow-mono {
+            font-family: var(--font-mono);
+            font-size: 11.5px;
+            font-weight: 600;
+            letter-spacing: .5px;
+            color: var(--pin);
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+
+        .eyebrow-mono::before {
+            content: '';
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--pin);
+            animation: blinkDot 2s ease-in-out infinite;
+        }
+
+        h1 {
+            font-family: var(--font-display);
+            font-size: 48px;
+            font-weight: 700;
+            line-height: 1.08;
+            letter-spacing: -1px;
+            color: var(--ink);
+            margin-bottom: 18px;
+        }
+
+        h1 em {
+            font-style: normal;
+            color: var(--pin);
+        }
+
+        .hero-sub {
+            font-size: 17px;
+            color: var(--slate);
+            line-height: 1.65;
+            margin-bottom: 30px;
+            max-width: 460px;
+        }
+
+        .hero-ctas {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+
+        .btn-primary {
+            background: var(--ink);
+            color: var(--paper);
+            padding: 13px 24px;
+            border-radius: var(--radius-sm);
+            font-size: 14.5px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            transition: transform .15s, background .15s, box-shadow .15s;
+            box-shadow: var(--shadow-card);
+        }
+
+        .btn-primary:hover {
+            background: var(--ink-2);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lift);
+        }
+
+        .btn-secondary {
+            color: var(--ink);
+            font-size: 14.5px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border-bottom: 1.5px solid var(--pin);
+            padding-bottom: 2px;
+            transition: gap .15s;
+        }
+
+        .btn-secondary:hover {
+            gap: 10px;
+        }
+
+        /* Mockup card */
+        .mock-card {
+            background: var(--paper);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lift);
+            position: relative;
+        }
+
+        .mock-titlebar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--line-soft);
+        }
+
+        .mock-titlebar .name {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--ink-2);
+            text-transform: uppercase;
+        }
+
+        .mock-body {
+            padding: 20px;
+        }
+
+        .mock-field-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 8px;
+            margin-bottom: 14px;
+            align-items: end;
+        }
+
+        .mock-field label {
+            display: block;
+            font-family: var(--font-mono);
+            font-size: 9.5px;
+            font-weight: 600;
+            color: var(--slate-soft);
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .mock-field .val {
+            background: var(--paper-alt);
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            padding: 7px 10px;
+            font-size: 12.5px;
+        }
+
+        .mock-run {
+            background: var(--ink);
+            color: var(--paper);
+            border: none;
+            border-radius: 6px;
+            padding: 8px 14px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        /* ── DOWNLOAD CTA SECTION ── */
+        .download-section {
+            background: var(--dark);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            padding: 100px 28px;
+        }
+
+        .download-section h2 {
+            font-family: var(--font-display);
+            font-size: 42px;
+            font-weight: 700;
+            color: var(--paper);
+            letter-spacing: -.8px;
+            line-height: 1.12;
+            margin-bottom: 14px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .download-section h2 em {
+            font-style: normal;
+            color: #E8865E;
+        }
+
+        .download-section p {
+            font-size: 16.5px;
+            color: var(--dark-text);
+            margin-bottom: 40px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .btn-primary-light {
+            background: var(--paper);
+            color: var(--ink);
+            padding: 16px 34px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: transform .18s, box-shadow .18s;
+            position: relative;
+            z-index: 1;
+            border: none;
+        }
+
+        .btn-primary-light:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 16px 40px rgba(0, 0, 0, .35);
+        }
+
+        .download-meta {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 22px;
+            margin-top: 26px;
+            flex-wrap: wrap;
+            position: relative;
+            z-index: 1;
+        }
+
+        .download-meta span {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: #7C8CAD;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Section Styles */
+        section {
+            padding: 88px 28px;
+        }
+
+        .section-inner {
+            max-width: 1180px;
+            margin: 0 auto;
+        }
+
+        .centered {
+            text-align: center;
+        }
+
+        .eyebrow {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--pin);
+            margin-bottom: 12px;
+        }
+
+        .section-heading {
+            font-family: var(--font-display);
+            font-size: 34px;
+            font-weight: 700;
+            color: var(--ink);
+            margin-bottom: 14px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 32px;
+            }
+
+            .hero-inner {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-links {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ── NAV ── -->
+    <nav>
+        <div class="nav-inner">
+            <div class="logo">
+                <svg viewBox="0 0 24 24" fill="none">
+                    <path fill="#C1401D"
+                        d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                </svg>
+                Google Data Map Scraper
+            </div>
+            <ul class="nav-links">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#how-it-works">How It Works</a></li>
+                <li><a href="https://github.com/ss-nex-x/google-map-data-scraper/releases/download/v.01/LeadGen.exe"
+                        class="btn-nav">Download LeadGen.exe</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- ── HERO ── -->
+    <section class="hero">
+        <div class="contour-bg" aria-hidden="true"></div>
+        <div class="hero-inner">
+            <div>
+                <div class="eyebrow-mono">Windows Desktop App · v0.1</div>
+                <h1>Find local businesses.<br />Build your <em>lead list.</em></h1>
+                <p class="hero-sub">Search Google Maps for any business category and location, and get an organized,
+                    export-ready spreadsheet back — no manual copying.</p>
+                <div class="hero-ctas">
+                    <a href="https://github.com/ss-nex-x/google-map-data-scraper/releases/download/v.01/LeadGen.exe"
+                        class="btn-primary">
+                        <svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
+                        </svg>
+                        Download LeadGen.exe
+                    </a>
+                    <a href="#how-it-works" class="btn-secondary">See how it works</a>
+                </div>
+            </div>
+
+            <div class="mock-wrap">
+                <div class="mock-card">
+                    <div class="pin-tab" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" width="20" height="20">
+                            <path fill="#C1401D"
+                                d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                        </svg>
+                    </div>
+                    <div class="mock-titlebar">
+                        <span class="name">LeadGen Scraper</span>
+                        <span class="ver" style="font-size: 10px; color: var(--slate-soft);">v0.1</span>
+                    </div>
+                    <div class="mock-body">
+                        <div class="mock-field-row">
+                            <div class="mock-field"><label>Keyword</label>
+                                <div class="val">Dental Clinics</div>
+                            </div>
+                            <div class="mock-field"><label>Location</label>
+                                <div class="val">New York</div>
+                            </div>
+                            <button class="mock-run">Run</button>
+                        </div>
+                        <div style="font-size: 11px; color: var(--slate);">Ready to extract business names, phones, and
+                            addresses.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── NEW DOWNLOAD SECTION ── -->
+    <section class="download-section" id="download">
+        <div class="contour-bg on-dark" aria-hidden="true"></div>
+        <div class="section-inner reveal">
+            <div class="eyebrow" style="color: #E8865E;">Get Started Now</div>
+            <h2>Ready to build your<br /><em>business list?</em></h2>
+            <p>Download the standalone LeadGen.exe for Windows. No installation, no setup, just results.</p>
+
+            <a href="https://github.com/ss-nex-x/google-map-data-scraper/releases/download/v.01/LeadGen.exe"
+                class="btn-primary-light">
+                <svg width="22" height="22" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
+                </svg>
+                Download LeadGen.exe (v0.1)
+            </a>
+
+            <div class="download-meta">
+                <span><svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
+                        <path
+                            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z" />
+                    </svg> Windows 10 / 11</span>
+                <span><svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z" />
+                    </svg> Direct Download</span>
+                <span><svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                    </svg> Virus Free / GitHub Hosted</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── FOOTER ── -->
+    <footer style="background: var(--dark); padding: 40px 28px; color: var(--dark-text); text-align: center;">
+        <p>© 2026 Google Data Map Scraper. Build your leads faster.</p>
+    </footer>
+
+    <script>
+        /* Simple Scroll Reveal */
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) entry.target.classList.add('visible');
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+    </script>
+
+</body>
+
+</html>
